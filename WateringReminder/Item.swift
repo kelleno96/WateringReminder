@@ -27,6 +27,23 @@ enum SchemaV1: VersionedSchema {
 enum SchemaV2: VersionedSchema {
     static var versionIdentifier = Schema.Version(2, 0, 0)
     static var models: [any PersistentModel.Type] { [Plant.self] }
+
+    @Model
+    final class Plant {
+        var name: String
+        var wateringDates: [Date]
+        var reminderEnabled: Bool
+        var reminderDays: Int
+        var notificationID: String
+
+        init(name: String) {
+            self.name = name
+            self.wateringDates = []
+            self.reminderEnabled = false
+            self.reminderDays = 7
+            self.notificationID = UUID().uuidString
+        }
+    }
 }
 
 enum SchemaV3: VersionedSchema {
