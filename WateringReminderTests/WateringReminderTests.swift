@@ -7,6 +7,7 @@
 
 import Testing
 import Foundation
+import UIKit
 @testable import WateringReminder
 
 // MARK: - Plant model tests
@@ -137,5 +138,90 @@ struct PlantModelTests {
         let a = Plant(name: "Plant A")
         let b = Plant(name: "Plant B")
         #expect(a.notificationID != b.notificationID)
+    }
+
+    @Test func photoFileNameDefaultsToNil() {
+        let plant = Plant(name: "Philodendron")
+        #expect(plant.photoFileName == nil)
+    }
+}
+
+// MARK: - PlantPhotoStorage tests
+
+struct PlantPhotoStorageTests {
+
+    /// Generates a simple colored UIImage at the requested size for use in tests.
+    private func makeTestImage(size: CGSize = CGSize(width: 100, height: 100),
+                               color: UIColor = .systemGreen) -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { ctx in
+            color.setFill()
+            ctx.fill(CGRect(origin: .zero, size: size))
+        }
+    }
+
+    @Test func saveAndLoadRoundtrip() throws {
+        let name = PlantPhotoStorage.generateNewFileName()
+        defer { PlantPhotoStorage.deleteImage(fileName: name) }
+
+        let image = makeTestImage()
+        try PlantPhotoStorage.save(image: image, as: name)
+
+        let loaded = PlantPhotoStorage.loadImage(fileName: name)
+        #expect(loaded != nil)
+    }
+
+    @Test func deleteRemovesFile() throws {
+        let name = PlantPhotoStorage.generateNewFileName()
+        try PlantPhotoStorage.save(image: makeTestImage(), as: name)
+        #expect(PlantPhotoStorage.fileExists(fileName: name) == true)
+
+        PlantPhotoStorage.deleteImage(fileName: name)
+        #expect(PlantPhotoStorage.fileExists(fileName: name) == false)
+    }
+
+    @Test func photosDirectoryIsCreated() {
+        let url = PlantPhotoStorage.photosDirectoryURL()
+        #expect(FileManager.default.fileExists(atPath: url.path))
+    }
+
+    @Test func savedFileIsExcludedFromBackup() throws {
+        let name = PlantPhotoStorage.generateNewFileName()
+        defer { PlantPhotoStorage.deleteImage(fileName: name) }
+
+        try PlantPhotoStorage.save(image: makeTestImage(), as: name)
+
+        let url = PlantPhotoStorage.photosDirectoryURL().appendingPathComponent(name)
+        let values = try url.resourceValues(forKeys: [.isExcludedFromBackupKey])
+        #expect(values.isExcludedFromBackup == true)
+    }
+
+    @Test func downscaleProducesExpectedMaxDimension() {
+        let source = makeTestImage(size: CGSize(width: 1000, height: 800))
+        let out = PlantPhotoStorage.downscale(source, maxDimension: 300)
+
+        let longest = max(out.size.width, out.size.height)
+        #expect(longest == 300)
+        // Aspect ratio preserved (within rounding)
+        let sourceAspect = source.size.width / source.size.height
+        let outAspect = out.size.width / out.size.height
+        #expect(abs(sourceAspect - outAspect) < 0.01)
+    }
+
+    @Test func downscaleSkipsWhenAlreadySmall() {
+        let source = makeTestImage(size: CGSize(width: 100, height: 80))
+        let out = PlantPhotoStorage.downscale(source, maxDimension: 300)
+        // Smaller-than-target images are returned unchanged
+        #expect(out.size == source.size)
+    }
+
+    @Test func generateNewFileNameIsUnique() {
+        let names = (0..<100).map { _ in PlantPhotoStorage.generateNewFileName() }
+        #expect(Set(names).count == 100)
+    }
+
+    @Test func generateNewFileNameHasJpgExtension() {
+        let name = PlantPhotoStorage.generateNewFileName()
+        #expect(name.hasSuffix(".jpg"))
     }
 }

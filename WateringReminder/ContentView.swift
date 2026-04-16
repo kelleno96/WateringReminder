@@ -68,8 +68,12 @@ struct ContentView: View {
     private func deletePlants(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
-                NotificationManager.cancelReminder(for: plants[index])
-                modelContext.delete(plants[index])
+                let plant = plants[index]
+                NotificationManager.cancelReminder(for: plant)
+                if let fileName = plant.photoFileName {
+                    PlantPhotoStorage.deleteImage(fileName: fileName)
+                }
+                modelContext.delete(plant)
             }
         }
     }
@@ -106,9 +110,7 @@ struct PlantRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Circle()
-                .fill(statusColor)
-                .frame(width: 10, height: 10)
+            leadingThumbnail
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(plant.name)
@@ -134,6 +136,37 @@ struct PlantRow: View {
         }
         .padding(.vertical, 4)
     }
+
+    @ViewBuilder
+    private var leadingThumbnail: some View {
+        ZStack(alignment: .bottomTrailing) {
+            Group {
+                if let name = plant.photoFileName,
+                   let img = PlantPhotoStorage.loadImage(fileName: name) {
+                    Image(uiImage: img)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    Circle()
+                        .fill(.secondary.opacity(0.15))
+                        .overlay(
+                            Image(systemName: "leaf.fill")
+                                .foregroundStyle(.green.opacity(0.7))
+                        )
+                }
+            }
+            .frame(width: 40, height: 40)
+            .clipShape(Circle())
+
+            Circle()
+                .fill(statusColor)
+                .frame(width: 12, height: 12)
+                .overlay(
+                    Circle().stroke(Color(.systemBackground), lineWidth: 2)
+                )
+                .offset(x: 2, y: 2)
+        }
+    }
 }
 
 // MARK: - Plant detail / history
@@ -142,6 +175,7 @@ struct PlantDetailView: View {
     @Bindable var plant: Plant
     @State private var showingDatePicker = false
     @State private var selectedDate = Date()
+    @State private var showingCamera = false
 
     private var sortedDates: [Date] {
         plant.wateringDates.sorted(by: >)
@@ -149,6 +183,35 @@ struct PlantDetailView: View {
 
     var body: some View {
         List {
+            // Photo
+            Section {
+                HStack {
+                    Spacer()
+                    photoThumbnail(size: 120)
+                    Spacer()
+                }
+                .listRowBackground(Color.clear)
+
+                if plant.photoFileName == nil {
+                    Button {
+                        showingCamera = true
+                    } label: {
+                        Label("Add Photo", systemImage: "camera.fill")
+                    }
+                } else {
+                    Button {
+                        showingCamera = true
+                    } label: {
+                        Label("Change Photo", systemImage: "camera.rotate")
+                    }
+                    Button(role: .destructive) {
+                        removePhoto()
+                    } label: {
+                        Label("Remove Photo", systemImage: "trash")
+                    }
+                }
+            }
+
             // Quick-water actions
             Section {
                 Button {
@@ -226,6 +289,57 @@ struct PlantDetailView: View {
                 NotificationManager.scheduleReminder(for: plant)
             }
         }
+        .fullScreenCover(isPresented: $showingCamera) {
+            PlantCameraView(
+                onCapture: { image in
+                    handleCapture(image)
+                    showingCamera = false
+                },
+                onCancel: { showingCamera = false }
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func photoThumbnail(size: CGFloat) -> some View {
+        Group {
+            if let name = plant.photoFileName,
+               let img = PlantPhotoStorage.loadImage(fileName: name) {
+                Image(uiImage: img)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Circle()
+                    .fill(.secondary.opacity(0.15))
+                    .overlay(
+                        Image(systemName: "leaf.fill")
+                            .font(.system(size: size * 0.3))
+                            .foregroundStyle(.green.opacity(0.6))
+                    )
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+    }
+
+    private func handleCapture(_ image: UIImage) {
+        let newName = PlantPhotoStorage.generateNewFileName()
+        do {
+            try PlantPhotoStorage.save(image: image, as: newName)
+        } catch {
+            return
+        }
+        if let oldName = plant.photoFileName {
+            PlantPhotoStorage.deleteImage(fileName: oldName)
+        }
+        plant.photoFileName = newName
+    }
+
+    private func removePhoto() {
+        if let name = plant.photoFileName {
+            PlantPhotoStorage.deleteImage(fileName: name)
+        }
+        plant.photoFileName = nil
     }
 
     private func deleteWaterings(offsets: IndexSet) {
@@ -249,11 +363,41 @@ struct AddPlantSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
+    @State private var pendingPhoto: UIImage?
+    @State private var showingCamera = false
     @FocusState private var focused: Bool
 
     var body: some View {
         NavigationStack {
             Form {
+                Section("Photo (optional)") {
+                    HStack {
+                        Spacer()
+                        photoPreview
+                        Spacer()
+                    }
+                    .listRowBackground(Color.clear)
+
+                    if pendingPhoto == nil {
+                        Button {
+                            showingCamera = true
+                        } label: {
+                            Label("Take Photo", systemImage: "camera.fill")
+                        }
+                    } else {
+                        Button {
+                            showingCamera = true
+                        } label: {
+                            Label("Retake", systemImage: "camera.rotate")
+                        }
+                        Button(role: .destructive) {
+                            pendingPhoto = nil
+                        } label: {
+                            Label("Remove", systemImage: "trash")
+                        }
+                    }
+                }
+
                 Section("Plant name") {
                     TextField("e.g. Monstera, Fiddle Leaf Fig…", text: $name)
                         .focused($focused)
@@ -266,16 +410,54 @@ struct AddPlantSheet: View {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
-                        let plant = Plant(name: name.trimmingCharacters(in: .whitespaces))
-                        modelContext.insert(plant)
-                        dismiss()
-                    }
+                    Button("Add") { addPlant() }
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
             .onAppear { focused = true }
+            .fullScreenCover(isPresented: $showingCamera) {
+                PlantCameraView(
+                    onCapture: { image in
+                        pendingPhoto = image
+                        showingCamera = false
+                    },
+                    onCancel: { showingCamera = false }
+                )
+            }
         }
+    }
+
+    @ViewBuilder
+    private var photoPreview: some View {
+        Group {
+            if let image = pendingPhoto {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Circle()
+                    .fill(.secondary.opacity(0.15))
+                    .overlay(
+                        Image(systemName: "leaf.fill")
+                            .font(.system(size: 36))
+                            .foregroundStyle(.green.opacity(0.6))
+                    )
+            }
+        }
+        .frame(width: 120, height: 120)
+        .clipShape(Circle())
+    }
+
+    private func addPlant() {
+        let plant = Plant(name: name.trimmingCharacters(in: .whitespaces))
+        if let image = pendingPhoto {
+            let fileName = PlantPhotoStorage.generateNewFileName()
+            if (try? PlantPhotoStorage.save(image: image, as: fileName)) != nil {
+                plant.photoFileName = fileName
+            }
+        }
+        modelContext.insert(plant)
+        dismiss()
     }
 }
 

@@ -29,11 +29,16 @@ enum SchemaV2: VersionedSchema {
     static var models: [any PersistentModel.Type] { [Plant.self] }
 }
 
+enum SchemaV3: VersionedSchema {
+    static var versionIdentifier = Schema.Version(3, 0, 0)
+    static var models: [any PersistentModel.Type] { [Plant.self] }
+}
+
 enum PlantMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [SchemaV1.self, SchemaV2.self] }
+    static var schemas: [any VersionedSchema.Type] { [SchemaV1.self, SchemaV2.self, SchemaV3.self] }
 
     static var stages: [MigrationStage] {
-        [migrateV1toV2]
+        [migrateV1toV2, migrateV2toV3]
     }
 
     static let migrateV1toV2 = MigrationStage.custom(
@@ -49,6 +54,11 @@ enum PlantMigrationPlan: SchemaMigrationPlan {
         },
         didMigrate: nil
     )
+
+    static let migrateV2toV3 = MigrationStage.lightweight(
+        fromVersion: SchemaV2.self,
+        toVersion: SchemaV3.self
+    )
 }
 
 // MARK: - Plant model
@@ -61,6 +71,8 @@ final class Plant {
     var reminderDays: Int
     // Stable ID used as the local notification identifier
     var notificationID: String
+    // Filename (inside Documents/PlantPhotos/) of an optional user photo
+    var photoFileName: String?
 
     init(name: String) {
         self.name = name
@@ -68,6 +80,7 @@ final class Plant {
         self.reminderEnabled = false
         self.reminderDays = 7
         self.notificationID = UUID().uuidString
+        self.photoFileName = nil
     }
 
     var lastWatered: Date? {
