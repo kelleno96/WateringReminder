@@ -2,7 +2,7 @@
 //  WateringReminderWidgetBundle.swift
 //  WateringReminderWidget
 //
-//  Entry point for the widget extension.
+//  Created by Kellen O'Connor on 4/17/26.
 //
 
 import WidgetKit

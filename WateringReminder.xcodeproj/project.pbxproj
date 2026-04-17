@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		792E8DD72F927F55005BC468 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 792E8DB52F927ED3005BC468 /* WidgetKit.framework */; };
+		792E8DD82F927F55005BC468 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 792E8DB72F927ED3005BC468 /* SwiftUI.framework */; };
+		792E8DE52F927F55005BC468 /* WateringReminderWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 792E8DD62F927F55005BC468 /* WateringReminderWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		792E8D632F909239005BC468 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,13 +27,48 @@
 			remoteGlobalIDString = 792E8D522F909239005BC468;
 			remoteInfo = WateringReminder;
 		};
+		792E8DE32F927F55005BC468 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 792E8D4B2F909239005BC468 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 792E8DD52F927F55005BC468;
+			remoteInfo = WateringReminderWidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		792E8DCA2F927ED4005BC468 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				792E8DE52F927F55005BC468 /* WateringReminderWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		792E8D532F909239005BC468 /* WateringReminder.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WateringReminder.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		792E8D622F909239005BC468 /* WateringReminderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WateringReminderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		792E8D6C2F909239005BC468 /* WateringReminderUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WateringReminderUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		792E8DB52F927ED3005BC468 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		792E8DB72F927ED3005BC468 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		792E8DD62F927F55005BC468 /* WateringReminderWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WateringReminderWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		792E8DF12F927F7D005BC468 /* WateringReminderWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WateringReminderWidgetExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		792E8DE62F927F55005BC468 /* Exceptions for "WateringReminderWidget" folder in "WateringReminderWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 792E8DD52F927F55005BC468 /* WateringReminderWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		792E8D552F909239005BC468 /* WateringReminder */ = {
@@ -43,6 +84,19 @@
 		792E8D6F2F909239005BC468 /* WateringReminderUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = WateringReminderUITests;
+			sourceTree = "<group>";
+		};
+		792E8DB92F927ED3005BC468 /* WateringReminderWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WateringReminderWidget;
+			sourceTree = "<group>";
+		};
+		792E8DD92F927F55005BC468 /* WateringReminderWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				792E8DE62F927F55005BC468 /* Exceptions for "WateringReminderWidget" folder in "WateringReminderWidgetExtension" target */,
+			);
+			path = WateringReminderWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -69,15 +123,28 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		792E8DD32F927F55005BC468 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				792E8DD82F927F55005BC468 /* SwiftUI.framework in Frameworks */,
+				792E8DD72F927F55005BC468 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		792E8D4A2F909239005BC468 = {
 			isa = PBXGroup;
 			children = (
+				792E8DF12F927F7D005BC468 /* WateringReminderWidgetExtension.entitlements */,
 				792E8D552F909239005BC468 /* WateringReminder */,
 				792E8D652F909239005BC468 /* WateringReminderTests */,
 				792E8D6F2F909239005BC468 /* WateringReminderUITests */,
+				792E8DB92F927ED3005BC468 /* WateringReminderWidget */,
+				792E8DD92F927F55005BC468 /* WateringReminderWidget */,
+				792E8DB42F927ED3005BC468 /* Frameworks */,
 				792E8D542F909239005BC468 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,8 +155,18 @@
 				792E8D532F909239005BC468 /* WateringReminder.app */,
 				792E8D622F909239005BC468 /* WateringReminderTests.xctest */,
 				792E8D6C2F909239005BC468 /* WateringReminderUITests.xctest */,
+				792E8DD62F927F55005BC468 /* WateringReminderWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		792E8DB42F927ED3005BC468 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				792E8DB52F927ED3005BC468 /* WidgetKit.framework */,
+				792E8DB72F927ED3005BC468 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -102,10 +179,12 @@
 				792E8D4F2F909239005BC468 /* Sources */,
 				792E8D502F909239005BC468 /* Frameworks */,
 				792E8D512F909239005BC468 /* Resources */,
+				792E8DCA2F927ED4005BC468 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				792E8DE42F927F55005BC468 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				792E8D552F909239005BC468 /* WateringReminder */,
@@ -163,6 +242,28 @@
 			productReference = 792E8D6C2F909239005BC468 /* WateringReminderUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		792E8DD52F927F55005BC468 /* WateringReminderWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 792E8DE72F927F55005BC468 /* Build configuration list for PBXNativeTarget "WateringReminderWidgetExtension" */;
+			buildPhases = (
+				792E8DD22F927F55005BC468 /* Sources */,
+				792E8DD32F927F55005BC468 /* Frameworks */,
+				792E8DD42F927F55005BC468 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				792E8DD92F927F55005BC468 /* WateringReminderWidget */,
+			);
+			name = WateringReminderWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = WateringReminderWidgetExtension;
+			productReference = 792E8DD62F927F55005BC468 /* WateringReminderWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -184,6 +285,9 @@
 						CreatedOnToolsVersion = 26.3;
 						TestTargetID = 792E8D522F909239005BC468;
 					};
+					792E8DD52F927F55005BC468 = {
+						CreatedOnToolsVersion = 26.3;
+					};
 				};
 			};
 			buildConfigurationList = 792E8D4E2F909239005BC468 /* Build configuration list for PBXProject "WateringReminder" */;
@@ -203,6 +307,7 @@
 				792E8D522F909239005BC468 /* WateringReminder */,
 				792E8D612F909239005BC468 /* WateringReminderTests */,
 				792E8D6B2F909239005BC468 /* WateringReminderUITests */,
+				792E8DD52F927F55005BC468 /* WateringReminderWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -223,6 +328,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		792E8D6A2F909239005BC468 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		792E8DD42F927F55005BC468 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -253,6 +365,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		792E8DD22F927F55005BC468 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -265,6 +384,11 @@
 			isa = PBXTargetDependency;
 			target = 792E8D522F909239005BC468 /* WateringReminder */;
 			targetProxy = 792E8D6D2F909239005BC468 /* PBXContainerItemProxy */;
+		};
+		792E8DE42F927F55005BC468 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 792E8DD52F927F55005BC468 /* WateringReminderWidgetExtension */;
+			targetProxy = 792E8DE32F927F55005BC468 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -395,6 +519,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = WateringReminder/WateringReminder.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SDC94829N4;
@@ -432,6 +557,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = WateringReminder/WateringReminder.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SDC94829N4;
@@ -548,6 +674,68 @@
 			};
 			name = Release;
 		};
+		792E8DE82F927F55005BC468 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = WateringReminderWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SDC94829N4;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WateringReminderWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WateringReminderWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = OConnorK.WateringReminder.WateringReminderWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		792E8DE92F927F55005BC468 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = WateringReminderWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SDC94829N4;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WateringReminderWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WateringReminderWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = OConnorK.WateringReminder.WateringReminderWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -583,6 +771,15 @@
 			buildConfigurations = (
 				792E8D7D2F909239005BC468 /* Debug */,
 				792E8D7E2F909239005BC468 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		792E8DE72F927F55005BC468 /* Build configuration list for PBXNativeTarget "WateringReminderWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				792E8DE82F927F55005BC468 /* Debug */,
+				792E8DE92F927F55005BC468 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
