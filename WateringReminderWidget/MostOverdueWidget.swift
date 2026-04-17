@@ -69,24 +69,48 @@ struct MostOverdueView: View {
     @ViewBuilder
     private func plantView(_ plant: PlantSnapshot) -> some View {
         let statusText = status(for: plant)
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Image(systemName: "drop.fill")
-                    .foregroundStyle(statusColor(for: plant))
-                Text("Next to water")
+        let photo = plant.photoFileName.flatMap { SharedSnapshotReader.loadPhoto(fileName: $0) }
+        HStack(alignment: .top, spacing: 10) {
+            photoThumb(photo)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    Image(systemName: "drop.fill")
+                        .foregroundStyle(statusColor(for: plant))
+                        .font(.caption2)
+                    Text("Next to water")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                Text(plant.name)
+                    .font(.headline)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)
+                Text(statusText)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(statusColor(for: plant))
             }
             Spacer(minLength: 0)
-            Text(plant.name)
-                .font(.headline)
-                .lineLimit(2)
-                .minimumScaleFactor(0.7)
-            Text(statusText)
-                .font(.caption)
-                .foregroundStyle(statusColor(for: plant))
         }
         .widgetURL(URL(string: "wateringreminder://plant/\(plant.notificationID)"))
+    }
+
+    @ViewBuilder
+    private func photoThumb(_ image: UIImage?) -> some View {
+        if let image {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 56, height: 56)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        } else {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(.green.opacity(0.15))
+                .frame(width: 56, height: 56)
+                .overlay(
+                    Image(systemName: "leaf.fill")
+                        .foregroundStyle(.green.opacity(0.7))
+                )
+        }
     }
 
     private var emptyView: some View {

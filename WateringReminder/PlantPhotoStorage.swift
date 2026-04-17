@@ -11,17 +11,58 @@ import UIKit
 
 enum PlantPhotoStorage {
 
+    /// App Group used to share the photos directory with the widget.
+    /// Keep in sync with `WateringSnapshotCache.appGroupID`.
+    static let appGroupID = "group.OConnorK.WateringReminder"
+
     // MARK: - Public API
 
-    /// Returns Documents/PlantPhotos/, creating the directory if needed.
+    /// Returns the shared `PlantPhotos/` directory, creating it if needed.
+    /// Prefers the App Group container so the widget can read the same
+    /// files; falls back to Documents/ when the App Group is unavailable
+    /// (e.g. unit tests running without the entitlement).
     nonisolated static func photosDirectoryURL() -> URL {
         let fm = FileManager.default
-        let docs = fm.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let dir = docs.appendingPathComponent("PlantPhotos", isDirectory: true)
+        let base: URL
+        if let shared = fm.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) {
+            base = shared
+        } else {
+            base = fm.urls(for: .documentDirectory, in: .userDomainMask).first!
+        }
+        let dir = base.appendingPathComponent("PlantPhotos", isDirectory: true)
         if !fm.fileExists(atPath: dir.path) {
             try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
         }
         return dir
+    }
+
+    /// Copies photos that still live in the legacy Documents/PlantPhotos/
+    /// directory into the current (App Group) directory. Safe to call on
+    /// every launch: it only copies files that don't already exist at the
+    /// destination, and removes the legacy dir once it's empty.
+    nonisolated static func migrateFromLegacyDocumentsIfNeeded() {
+        let fm = FileManager.default
+        let docs = fm.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let legacy = docs.appendingPathComponent("PlantPhotos", isDirectory: true)
+        let current = photosDirectoryURL()
+        guard legacy.path != current.path,
+              fm.fileExists(atPath: legacy.path),
+              let entries = try? fm.contentsOfDirectory(at: legacy, includingPropertiesForKeys: nil) else {
+            return
+        }
+        for src in entries {
+            let dst = current.appendingPathComponent(src.lastPathComponent)
+            if !fm.fileExists(atPath: dst.path) {
+                try? fm.moveItem(at: src, to: dst)
+                var copied = dst
+                var values = URLResourceValues()
+                values.isExcludedFromBackup = true
+                try? copied.setResourceValues(values)
+            } else {
+                try? fm.removeItem(at: src)
+            }
+        }
+        try? fm.removeItem(at: legacy)
     }
 
     /// Generates a new unique filename for a plant photo.

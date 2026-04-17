@@ -13,6 +13,10 @@ struct WateringReminderApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var sharedModelContainer: ModelContainer = {
+        // One-time move of any photos that predate the App Group container,
+        // so the widget can load them from the shared location.
+        PlantPhotoStorage.migrateFromLegacyDocumentsIfNeeded()
+
         let schema = Schema(versionedSchema: SchemaV4.self)
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
