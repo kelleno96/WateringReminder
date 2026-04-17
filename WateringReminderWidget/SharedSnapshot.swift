@@ -9,6 +9,7 @@
 //
 
 import Foundation
+import UIKit
 
 struct PlantSnapshot: Codable, Hashable {
     var notificationID: String
@@ -28,6 +29,20 @@ enum SharedSnapshotReader {
         guard let defaults = UserDefaults(suiteName: appGroupID),
               let data = defaults.data(forKey: snapshotKey) else { return [] }
         return (try? JSONDecoder().decode([PlantSnapshot].self, from: data)) ?? []
+    }
+
+    /// Loads the JPEG at `fileName` from the App Group-shared `PlantPhotos/`
+    /// directory. Returns nil if the App Group isn't available or the file
+    /// doesn't exist.
+    static func loadPhoto(fileName: String) -> UIImage? {
+        let fm = FileManager.default
+        guard let shared = fm.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) else {
+            return nil
+        }
+        let url = shared.appendingPathComponent("PlantPhotos", isDirectory: true)
+            .appendingPathComponent(fileName)
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return UIImage(data: data)
     }
 
     static func mostOverdue() -> PlantSnapshot? {
