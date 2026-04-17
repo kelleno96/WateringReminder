@@ -86,7 +86,8 @@ struct PlantRow: View {
 
     private var daysSinceWatered: Int? {
         guard let last = plant.lastWatered else { return nil }
-        return Calendar.current.dateComponents([.day], from: last, to: Date()).day
+        let calendar = Calendar.current
+        return calendar.dateComponents([.day], from: calendar.startOfDay(for: last), to: calendar.startOfDay(for: Date())).day
     }
 
     private var lastWateredText: String {
