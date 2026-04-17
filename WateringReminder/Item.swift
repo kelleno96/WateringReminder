@@ -124,11 +124,8 @@ final class Plant {
 
 enum NotificationManager {
 
-    static func requestPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in }
-    }
-
     /// Schedule (or reschedule) the reminder for a plant based on its current settings and last watering.
+    /// Requests notification permission on first use so the system prompt appears in context.
     static func scheduleReminder(for plant: Plant) {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: [plant.notificationID])
@@ -136,22 +133,28 @@ enum NotificationManager {
         guard plant.reminderEnabled, plant.reminderDays > 0,
               let fireDate = plant.nextReminderDate else { return }
 
-        let content = UNMutableNotificationContent()
-        content.title = "\(plant.name) needs water!"
-        content.body = "It's been \(plant.reminderDays) day\(plant.reminderDays == 1 ? "" : "s") — time to water \(plant.name)."
-        content.sound = .default
+        // Request permission (no-ops after the first time) so the prompt
+        // appears when the user actually wants notifications.
+        center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
+            guard granted else { return }
 
-        let trigger: UNNotificationTrigger
-        if fireDate > Date() {
-            let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
-            trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
-        } else {
-            // Already overdue: fire in 5 seconds so the user sees it right away
-            trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+            let content = UNMutableNotificationContent()
+            content.title = "\(plant.name) needs water!"
+            content.body = "It's been \(plant.reminderDays) day\(plant.reminderDays == 1 ? "" : "s") — time to water \(plant.name)."
+            content.sound = .default
+
+            let trigger: UNNotificationTrigger
+            if fireDate > Date() {
+                let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
+                trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+            } else {
+                // Already overdue: fire in 5 seconds so the user sees it right away
+                trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+            }
+
+            let request = UNNotificationRequest(identifier: plant.notificationID, content: content, trigger: trigger)
+            center.add(request)
         }
-
-        let request = UNNotificationRequest(identifier: plant.notificationID, content: content, trigger: trigger)
-        center.add(request)
     }
 
     static func cancelReminder(for plant: Plant) {

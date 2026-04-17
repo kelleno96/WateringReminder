@@ -28,7 +28,6 @@ struct WateringReminderApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .task { NotificationManager.requestPermission() }
         }
         .modelContainer(sharedModelContainer)
     }

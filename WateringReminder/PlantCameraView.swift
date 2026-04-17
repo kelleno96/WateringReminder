@@ -10,7 +10,7 @@
 //  downscaled in-memory. No data ever leaves the device.
 //
 
-import AVFoundation
+@preconcurrency import AVFoundation
 import SwiftUI
 import UIKit
 
@@ -332,15 +332,15 @@ final class CameraModel: @unchecked Sendable {
 // MARK: - Photo delegate
 
 private final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate, @unchecked Sendable {
-    private let onFinish: (Data?) -> Void
+    private let onFinish: @Sendable (Data?) -> Void
 
-    init(onFinish: @escaping (Data?) -> Void) {
+    init(onFinish: @escaping @Sendable (Data?) -> Void) {
         self.onFinish = onFinish
     }
 
-    func photoOutput(_ output: AVCapturePhotoOutput,
-                     didFinishProcessingPhoto photo: AVCapturePhoto,
-                     error: Error?) {
+    nonisolated func photoOutput(_ output: AVCapturePhotoOutput,
+                                didFinishProcessingPhoto photo: AVCapturePhoto,
+                                error: Error?) {
         guard error == nil else {
             onFinish(nil)
             return
