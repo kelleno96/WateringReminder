@@ -8,12 +8,69 @@
 import SwiftUI
 import SwiftData
 
+// MARK: - Sort options
+
+enum PlantSortOption: String, CaseIterable, Identifiable {
+    case name = "Name (A→Z)"
+    case mostOverdue = "Most overdue first"
+    case recentlyWatered = "Recently watered"
+
+    var id: String { rawValue }
+    var systemImage: String {
+        switch self {
+        case .name: return "textformat"
+        case .mostOverdue: return "exclamationmark.triangle"
+        case .recentlyWatered: return "drop"
+        }
+    }
+}
+
 // MARK: - Main plant list
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \Plant.name) private var plants: [Plant]
+    @Query private var plants: [Plant]
+
     @State private var showingAddPlant = false
+    @State private var showingSettings = false
+    @State private var searchText = ""
+    @State private var sortOption: PlantSortOption = .name
+    @State private var pendingDeletion: IndexSet?
+    @State private var showingDeleteConfirm = false
+
+    private var filteredSortedPlants: [Plant] {
+        let filtered: [Plant]
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if query.isEmpty {
+            filtered = plants
+        } else {
+            filtered = plants.filter { $0.name.localizedCaseInsensitiveContains(query) }
+        }
+        switch sortOption {
+        case .name:
+            return filtered.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        case .mostOverdue:
+            return filtered.sorted { a, b in
+                // Plants with a non-nil reminder date come first, sorted ascending
+                // (earliest / most overdue first). Plants without a reminder go last.
+                switch (a.nextReminderDate, b.nextReminderDate) {
+                case let (x?, y?): return x < y
+                case (_?, nil): return true
+                case (nil, _?): return false
+                case (nil, nil): return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+                }
+            }
+        case .recentlyWatered:
+            return filtered.sorted { a, b in
+                switch (a.lastWatered, b.lastWatered) {
+                case let (x?, y?): return x > y
+                case (_?, nil): return true
+                case (nil, _?): return false
+                case (nil, nil): return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+                }
+            }
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -22,33 +79,85 @@ struct ContentView: View {
                     emptyState
                 } else {
                     List {
-                        ForEach(plants) { plant in
+                        ForEach(filteredSortedPlants) { plant in
                             NavigationLink(destination: PlantDetailView(plant: plant)) {
                                 PlantRow(plant: plant)
                             }
                         }
-                        .onDelete(perform: deletePlants)
+                        .onDelete(perform: requestDelete)
                     }
+                    .searchable(text: $searchText, prompt: "Search plants")
                 }
             }
             .navigationTitle("My Plants")
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button {
-                        showingAddPlant = true
+                        showingSettings = true
                     } label: {
-                        Image(systemName: "plus")
+                        Image(systemName: "gearshape")
                     }
                 }
-                if !plants.isEmpty {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        EditButton()
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack {
+                        if !plants.isEmpty {
+                            sortMenu
+                        }
+                        Button {
+                            showingAddPlant = true
+                        } label: {
+                            Image(systemName: "plus")
+                        }
                     }
                 }
             }
             .sheet(isPresented: $showingAddPlant) {
                 AddPlantSheet()
             }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
+            }
+            .onAppear { WateringSnapshotCache.write(plants: plants) }
+            .onChange(of: plants.count) { _, _ in
+                WateringSnapshotCache.write(plants: plants)
+            }
+            .confirmationDialog(
+                deleteConfirmTitle,
+                isPresented: $showingDeleteConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive) {
+                    performPendingDelete()
+                }
+                Button("Cancel", role: .cancel) {
+                    pendingDeletion = nil
+                }
+            } message: {
+                Text("This will also remove any photos on this device. This can't be undone.")
+            }
+        }
+    }
+
+    private var deleteConfirmTitle: String {
+        guard let offsets = pendingDeletion, offsets.count > 0 else {
+            return "Delete plant?"
+        }
+        if offsets.count == 1 {
+            let plant = filteredSortedPlants[offsets.first!]
+            return "Delete \(plant.name)?"
+        }
+        return "Delete \(offsets.count) plants?"
+    }
+
+    private var sortMenu: some View {
+        Menu {
+            Picker("Sort", selection: $sortOption) {
+                ForEach(PlantSortOption.allCases) { option in
+                    Label(option.rawValue, systemImage: option.systemImage).tag(option)
+                }
+            }
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
         }
     }
 
@@ -65,24 +174,37 @@ struct ContentView: View {
         }
     }
 
-    private func deletePlants(offsets: IndexSet) {
+    private func requestDelete(offsets: IndexSet) {
+        pendingDeletion = offsets
+        showingDeleteConfirm = true
+    }
+
+    private func performPendingDelete() {
+        guard let offsets = pendingDeletion else { return }
+        let list = filteredSortedPlants
         withAnimation {
             for index in offsets {
-                let plant = plants[index]
+                let plant = list[index]
                 NotificationManager.cancelReminder(for: plant)
                 if let fileName = plant.photoFileName {
                     PlantPhotoStorage.deleteImage(fileName: fileName)
                 }
+                for photo in plant.photos {
+                    PlantPhotoStorage.deleteImage(fileName: photo.fileName)
+                }
                 modelContext.delete(plant)
             }
         }
+        pendingDeletion = nil
+        WateringSnapshotCache.write(plants: plants)
     }
 }
 
 // MARK: - Plant row
 
 struct PlantRow: View {
-    let plant: Plant
+    @Bindable var plant: Plant
+    @State private var confirmingDuplicate = false
 
     private var daysSinceWatered: Int? {
         guard let last = plant.lastWatered else { return nil }
@@ -116,6 +238,8 @@ struct PlantRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(plant.name)
                     .font(.headline)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                 Text(lastWateredText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -124,10 +248,7 @@ struct PlantRow: View {
             Spacer()
 
             Button {
-                withAnimation {
-                    plant.logWatering()
-                    NotificationManager.scheduleReminder(for: plant)
-                }
+                attemptQuickWater()
             } label: {
                 Image(systemName: "drop.fill")
                     .font(.title2)
@@ -136,13 +257,37 @@ struct PlantRow: View {
             .buttonStyle(.borderless)
         }
         .padding(.vertical, 4)
+        .confirmationDialog(
+            "Already watered less than 5 minutes ago.",
+            isPresented: $confirmingDuplicate,
+            titleVisibility: .visible
+        ) {
+            Button("Log Again") { performWater() }
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+
+    private func attemptQuickWater() {
+        if let last = plant.lastWatered,
+           Date().timeIntervalSince(last) < 300 {
+            confirmingDuplicate = true
+            return
+        }
+        performWater()
+    }
+
+    private func performWater() {
+        withAnimation {
+            plant.logWatering()
+            NotificationManager.scheduleReminder(for: plant)
+        }
     }
 
     @ViewBuilder
     private var leadingThumbnail: some View {
         ZStack(alignment: .bottomTrailing) {
             Group {
-                if let name = plant.photoFileName,
+                if let name = plant.displayPhotoFileName,
                    let img = PlantPhotoStorage.loadImage(fileName: name) {
                     Image(uiImage: img)
                         .resizable()
@@ -176,7 +321,7 @@ struct PlantDetailView: View {
     @Bindable var plant: Plant
     @State private var showingDatePicker = false
     @State private var selectedDate = Date()
-    @State private var showingCamera = false
+    @State private var confirmingDuplicate = false
 
     private var sortedDates: [Date] {
         plant.wateringDates.sorted(by: >)
@@ -184,40 +329,17 @@ struct PlantDetailView: View {
 
     var body: some View {
         List {
-            // Photo
-            Section {
-                HStack {
-                    Spacer()
-                    photoThumbnail(size: 120)
-                    Spacer()
-                }
-                .listRowBackground(Color.clear)
-
-                if plant.photoFileName == nil {
-                    Button {
-                        showingCamera = true
-                    } label: {
-                        Label("Add Photo", systemImage: "camera.fill")
-                    }
-                } else {
-                    Button {
-                        showingCamera = true
-                    } label: {
-                        Label("Change Photo", systemImage: "camera.rotate")
-                    }
-                    Button(role: .destructive) {
-                        removePhoto()
-                    } label: {
-                        Label("Remove Photo", systemImage: "trash")
-                    }
-                }
+            // Photo timeline
+            Section("Photos") {
+                PhotoTimelineView(plant: plant)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
             }
 
             // Quick-water actions
             Section {
                 Button {
-                    plant.logWatering()
-                    NotificationManager.scheduleReminder(for: plant)
+                    attemptQuickWater()
                 } label: {
                     Label("Water now", systemImage: "drop.fill")
                         .font(.headline)
@@ -265,7 +387,28 @@ struct PlantDetailView: View {
                             }
                         }
                     }
+
+                    if plant.reminderIsOverdue {
+                        Button {
+                            snoozeUntilTomorrow()
+                        } label: {
+                            Label("Remind me tomorrow", systemImage: "zzz")
+                        }
+                    }
+
+                    if let snooze = plant.snoozedUntil, snooze > Date() {
+                        LabeledContent("Snoozed until") {
+                            Text(snooze, style: .date)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
+            }
+
+            // Notes
+            Section("Notes") {
+                TextEditor(text: $plant.notes)
+                    .frame(minHeight: 80)
             }
 
             // Watering history
@@ -290,57 +433,33 @@ struct PlantDetailView: View {
                 NotificationManager.scheduleReminder(for: plant)
             }
         }
-        .fullScreenCover(isPresented: $showingCamera) {
-            PlantCameraView(
-                onCapture: { image in
-                    handleCapture(image)
-                    showingCamera = false
-                },
-                onCancel: { showingCamera = false }
-            )
+        .confirmationDialog(
+            "Already watered less than 5 minutes ago.",
+            isPresented: $confirmingDuplicate,
+            titleVisibility: .visible
+        ) {
+            Button("Log Again") { performWater() }
+            Button("Cancel", role: .cancel) {}
         }
     }
 
-    @ViewBuilder
-    private func photoThumbnail(size: CGFloat) -> some View {
-        Group {
-            if let name = plant.photoFileName,
-               let img = PlantPhotoStorage.loadImage(fileName: name) {
-                Image(uiImage: img)
-                    .resizable()
-                    .scaledToFill()
-            } else {
-                Circle()
-                    .fill(.secondary.opacity(0.15))
-                    .overlay(
-                        Image(systemName: "leaf.fill")
-                            .font(.system(size: size * 0.3))
-                            .foregroundStyle(.green.opacity(0.6))
-                    )
-            }
-        }
-        .frame(width: size, height: size)
-        .clipShape(Circle())
-    }
-
-    private func handleCapture(_ image: UIImage) {
-        let newName = PlantPhotoStorage.generateNewFileName()
-        do {
-            try PlantPhotoStorage.save(image: image, as: newName)
-        } catch {
+    private func attemptQuickWater() {
+        if let last = plant.lastWatered,
+           Date().timeIntervalSince(last) < 300 {
+            confirmingDuplicate = true
             return
         }
-        if let oldName = plant.photoFileName {
-            PlantPhotoStorage.deleteImage(fileName: oldName)
-        }
-        plant.photoFileName = newName
+        performWater()
     }
 
-    private func removePhoto() {
-        if let name = plant.photoFileName {
-            PlantPhotoStorage.deleteImage(fileName: name)
-        }
-        plant.photoFileName = nil
+    private func performWater() {
+        plant.logWatering()
+        NotificationManager.scheduleReminder(for: plant)
+    }
+
+    private func snoozeUntilTomorrow() {
+        SnoozeHelper.snoozeUntilTomorrow(plant)
+        NotificationManager.scheduleReminder(for: plant)
     }
 
     private func deleteWaterings(offsets: IndexSet) {
@@ -353,7 +472,6 @@ struct PlantDetailView: View {
                 }
             }
         }
-        // Reschedule based on the new lastWatered
         NotificationManager.scheduleReminder(for: plant)
     }
 }
@@ -366,7 +484,12 @@ struct AddPlantSheet: View {
     @State private var name = ""
     @State private var pendingPhoto: UIImage?
     @State private var showingCamera = false
+    @State private var selectedSpeciesID: String = ""
     @FocusState private var focused: Bool
+
+    private var trimmedName: String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 
     var body: some View {
         NavigationStack {
@@ -399,6 +522,26 @@ struct AddPlantSheet: View {
                     }
                 }
 
+                Section("Species (optional)") {
+                    Picker("Species", selection: $selectedSpeciesID) {
+                        Text("None").tag("")
+                        ForEach(SpeciesCatalog.all) { species in
+                            Text(species.commonName).tag(species.id)
+                        }
+                    }
+                    .onChange(of: selectedSpeciesID) { _, newID in
+                        guard let species = SpeciesCatalog.byID(newID) else { return }
+                        if trimmedName.isEmpty {
+                            name = species.commonName
+                        }
+                    }
+                    if let species = SpeciesCatalog.byID(selectedSpeciesID) {
+                        Text("Recommended: every \(species.recommendedDays) day\(species.recommendedDays == 1 ? "" : "s")")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 Section("Plant name") {
                     TextField("e.g. Monstera, Fiddle Leaf Fig…", text: $name)
                         .focused($focused)
@@ -412,7 +555,7 @@ struct AddPlantSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Add") { addPlant() }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(trimmedName.isEmpty)
                 }
             }
             .onAppear { focused = true }
@@ -450,11 +593,21 @@ struct AddPlantSheet: View {
     }
 
     private func addPlant() {
-        let plant = Plant(name: name.trimmingCharacters(in: .whitespaces))
+        let finalName = trimmedName
+        guard !finalName.isEmpty else { return }
+        let plant = Plant(name: finalName)
+
+        if let species = SpeciesCatalog.byID(selectedSpeciesID) {
+            plant.speciesIdentifier = species.id
+            plant.reminderDays = species.recommendedDays
+        }
+
         if let image = pendingPhoto {
             let fileName = PlantPhotoStorage.generateNewFileName()
             if (try? PlantPhotoStorage.save(image: image, as: fileName)) != nil {
-                plant.photoFileName = fileName
+                let entry = PhotoEntry(fileName: fileName, takenAt: Date())
+                modelContext.insert(entry)
+                entry.plant = plant
             }
         }
         modelContext.insert(plant)
