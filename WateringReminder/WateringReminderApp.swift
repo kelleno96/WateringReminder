@@ -10,16 +10,20 @@ import SwiftData
 
 @main
 struct WateringReminderApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema(versionedSchema: SchemaV3.self)
+        let schema = Schema(versionedSchema: SchemaV4.self)
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {
-            return try ModelContainer(
+            let container = try ModelContainer(
                 for: schema,
                 migrationPlan: PlantMigrationPlan.self,
                 configurations: [modelConfiguration]
             )
+            NotificationResponder.modelContainer = container
+            return container
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }

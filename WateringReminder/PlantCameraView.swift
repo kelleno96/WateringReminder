@@ -21,6 +21,8 @@ struct PlantCameraView: View {
     var onCancel: () -> Void
 
     @State private var model = CameraModel()
+    @State private var shutterFlash = false
+    @State private var shutterScale: CGFloat = 1.0
 
     private static let circleDiameterFraction: CGFloat = 0.75
 
@@ -29,6 +31,13 @@ struct PlantCameraView: View {
             ZStack {
                 Color.black
                 content(in: geo.size)
+                if shutterFlash {
+                    Color.white
+                        .ignoresSafeArea()
+                        .opacity(0.9)
+                        .allowsHitTesting(false)
+                        .transition(.opacity)
+                }
             }
         }
         .ignoresSafeArea()
@@ -118,6 +127,7 @@ struct PlantCameraView: View {
         VStack {
             Spacer()
             Button {
+                triggerShutterAnimation()
                 Task { await performCapture(previewSize: size) }
             } label: {
                 ZStack {
@@ -128,8 +138,23 @@ struct PlantCameraView: View {
                         .fill(Color.white)
                         .frame(width: 72, height: 72)
                 }
+                .scaleEffect(shutterScale)
             }
             .padding(.bottom, 40)
+        }
+    }
+
+    private func triggerShutterAnimation() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        withAnimation(.easeOut(duration: 0.08)) {
+            shutterFlash = true
+            shutterScale = 0.85
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            withAnimation(.easeIn(duration: 0.15)) {
+                shutterFlash = false
+                shutterScale = 1.0
+            }
         }
     }
 
