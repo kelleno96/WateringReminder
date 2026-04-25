@@ -21,8 +21,3 @@ An iOS app that helps you keep track of when to water your houseplants.
 2. Open `WateringReminder.xcodeproj` in Xcode
 3. Build and run on a simulator or device
 
-## Built With
-
-- [SwiftUI](https://developer.apple.com/xcode/swiftui/) — declarative UI framework
-- [SwiftData](https://developer.apple.com/documentation/swiftdata) — persistent storage with automatic schema migration
-- [UserNotifications](https://developer.apple.com/documentation/usernotifications) — local push notification scheduling
